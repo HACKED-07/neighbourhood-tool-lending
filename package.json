@@ -1,0 +1,28 @@
+{
+  "name": "neighbourhood-tool-lending",
+  "version": "1.0.0",
+  "description": "A decentralised neighbourhood tool lending system built on Ethereum: escrowed deposits, automatic late fees, and on-chain reputation.",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "coverage": "hardhat coverage",
+    "node": "hardhat node",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "seed:local": "hardhat run scripts/seed.js --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+    "dev": "vite --config frontend/vite.config.mjs",
+    "build": "vite build --config frontend/vite.config.mjs"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^18.0.9",
+    "hardhat": "^2.29.1",
+    "vite": "^8.3.5"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.6.1",
+    "ethers": "^6.17.0"
+  }
+}

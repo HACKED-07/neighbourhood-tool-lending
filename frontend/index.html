@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Toolshed · Neighbourhood Tool Lending on Ethereum</title>
+    <meta name="description" content="Borrow and lend tools with your neighbours. Deposits held in a smart contract escrow, reputation on-chain." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="caution"></div>
+    <header class="top">
+      <a class="brand" href="#" data-action="tab" data-tab="browse">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+          <polygon points="24,3 42,13.5 42,34.5 24,45 6,34.5 6,13.5" fill="none" stroke="currentColor" stroke-width="4" />
+          <circle cx="24" cy="24" r="8" fill="none" stroke="currentColor" stroke-width="4" />
+        </svg>
+        <span>
+          <strong>The Toolshed</strong>
+          <small>Neighbourhood tool lending · on-chain</small>
+        </span>
+      </a>
+      <div id="wallet" class="wallet"></div>
+    </header>
+
+    <main>
+      <section id="stats" class="stats"></section>
+      <nav id="tabs" class="tabs"></nav>
+      <section id="app"></section>
+    </main>
+
+    <footer class="foot">
+      <span id="contract-info"></span>
+      <span id="dev-tools"></span>
+    </footer>
+
+    <div id="modal-root"></div>
+    <div id="toasts" class="toasts" aria-live="polite"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
