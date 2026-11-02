@@ -53,7 +53,7 @@ The system has three layers:
 
 ### 4.2 Actors
 - **Member:** a registered resident. Any member can be both a lender (tool owner) and a borrower.
-- **Owner (lender):** lists tools, approves or rejects requests, and confirms returns.
+- **Tool owner (lender):** lists tools, approves or rejects requests, and confirms returns. This is not the contract variable `owner`, which only records who deployed the contract and has no extra permissions.
 - **Borrower:** requests tools, pays the fee and deposit, and returns the tools.
 
 ### 4.3 Data model
@@ -116,7 +116,7 @@ Each transition checks the **caller's role** and the **current state**. Any inva
 3. **One open loan per tool:** `currentLoanId` prevents double-booking.
 4. **Time-outs instead of an arbiter:** the 3-day confirmation window and the 7-day default grace period resolve stalled loans without a trusted third party.
 5. **Events for every state change:** the frontend's Ledger view is built entirely from these logs, which shows how blockchain provides auditability.
-6. **No admin role:** the contract has no owner, pause switch or upgrade path, so it is fully decentralised once deployed.
+6. **No admin powers:** the constructor stores the deployer in `owner`, but that address cannot pause the contract, upgrade it, or move funds. The lending rules are fixed once deployed.
 
 ### 5.3 Frontend screens
 - **Browse:** pegboard of tools with search, category filters, availability and the owner's reputation.
@@ -127,8 +127,9 @@ Each transition checks the **caller's role** and the **current state**. Any inva
 
 ## 6. Testing
 
-The automated suite (`npm test`) contains **26 test cases** covering:
+The automated suite (`npm test`) contains **28 test cases** covering:
 
+- the constructor recording the deployer, and the pure `quote` function;
 - registration, duplicate and empty-field validation;
 - listing and editing tools, including ownership and on-loan restrictions;
 - exact-payment enforcement, duration bounds, own-tool and double-booking prevention;
@@ -145,6 +146,7 @@ Sample output:
 
 ```
   ToolLending
+    Constructor and quote   ✔ ✔
     Membership              ✔ ✔ ✔
     Tool catalogue          ✔ ✔ ✔ ✔
     Requesting a loan       ✔ ✔ ✔
@@ -154,7 +156,7 @@ Sample output:
     Reputation              ✔
     Withdrawals             ✔ ✔
     History views           ✔
-  26 passing
+  28 passing
 ```
 
 ## 7. Security analysis

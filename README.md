@@ -2,7 +2,7 @@
 
 A decentralised application (DApp) that lets neighbours lend and borrow tools without having to trust each other or a middleman. A Solidity smart contract holds each borrower's security deposit in escrow, calculates late fees automatically, settles disputes with time-outs, and records every member's reputation permanently on-chain.
 
-![Stack](https://img.shields.io/badge/Solidity-0.8.24-363636) ![Hardhat](https://img.shields.io/badge/Hardhat-2.x-f7df1e) ![ethers](https://img.shields.io/badge/ethers.js-v6-2535a0) ![Tests](https://img.shields.io/badge/tests-26%20passing-2c6a48)
+![Stack](https://img.shields.io/badge/Solidity-0.8.24-363636) ![Hardhat](https://img.shields.io/badge/Hardhat-2.x-f7df1e) ![ethers](https://img.shields.io/badge/ethers.js-v6-2535a0) ![Tests](https://img.shields.io/badge/tests-28%20passing-2c6a48)
 
 ---
 
@@ -66,7 +66,7 @@ stateDiagram-v2
 ```
 neighbourhood-tool-lending/
 ├── contracts/ToolLending.sol     # Smart contract
-├── test/ToolLending.test.js      # 26 unit tests (Mocha + Chai + Hardhat)
+├── test/ToolLending.test.js      # 28 unit tests (Mocha + Chai + Hardhat)
 ├── scripts/deploy.js             # Deploys and writes ABI + address for the frontend
 ├── scripts/seed.js               # Demo members, tools and loans
 ├── frontend/                     # Vite web app (index.html, src/main.js, src/style.css)
@@ -121,6 +121,8 @@ npm run build            # static site in frontend/dist, deployable to any stati
 
 | Function | Who | Purpose |
 | --- | --- | --- |
+| `constructor()` | deployer, once | Records the deployer as `owner` and emits `ContractDeployed`. The owner cannot change loans or take funds. |
+| `quote(dailyFee, days, deposit)` *pure* | anyone | Returns rental fee and total escrow. Reads no storage. |
 | `registerMember(name, neighbourhood)` | anyone | Join the system |
 | `listTool(name, category, description, dailyFee, deposit)` | member | Add a tool |
 | `updateTool(toolId, dailyFee, deposit, listed)` | owner | Reprice / unlist (not while on loan) |
@@ -134,7 +136,7 @@ npm run build            # static site in frontend/dist, deployable to any stati
 | `rate(loanId, score)` | either party | 1–5 stars, once each |
 | `withdraw()` | anyone | Pull credited ETH |
 
-The contract also has view functions: `getAllTools`, `getTool`, `getToolsByOwner`, `getLoan`, `getLoansByBorrower`, `getLoansByLender`, `getMember`, `getMembers`, `reputationOf`, `previewLateFee` and `pendingWithdrawals`.
+The contract also has view functions: `getAllTools`, `getTool`, `getToolsByOwner`, `getLoan`, `getLoansByBorrower`, `getLoansByLender`, `getMember`, `getMembers`, `reputationOf`, `previewLateFee`, `pendingWithdrawals`, `owner` and `deployedAt`.
 
 ## Security considerations
 
@@ -142,8 +144,8 @@ The contract also has view functions: `getAllTools`, `getTool`, `getToolsByOwner
 - **Exact payment:** `requestLoan` uses `require` so `msg.value` must equal the amount returned by the `pure` function `quote`.
 - **Bounded charges:** the late fee plus the damage charge can never exceed the deposit.
 - **Role checks:** every state transition verifies the caller (borrower or lender) and the current loan status.
-- **Custom errors:** these give cheaper reverts with clear reasons, and the frontend decodes them into readable messages.
-- **No admin keys:** there is no owner, no pause switch and no upgradeability. The rules cannot be changed after deployment.
+- **`require` and custom errors:** input rules use `require` with a readable reason. Illegal loan transitions revert with a custom error such as `InvalidLoanStatus`.
+- **No admin powers:** `owner` stores the deployer and nothing else. There is no pause switch and no upgrade path. The rules cannot be changed after deployment.
 
 ## License
 
