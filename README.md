@@ -1,4 +1,4 @@
-# The Toolshed — Neighbourhood Tool Lending on Ethereum
+# The Toolshed: Neighbourhood Tool Lending on Ethereum
 
 A decentralised application (DApp) that lets neighbours lend and borrow tools without having to trust each other or a middleman. A Solidity smart contract holds each borrower's security deposit in escrow, calculates late fees automatically, settles disputes with time-outs, and records every member's reputation permanently on-chain.
 
@@ -11,7 +11,7 @@ A decentralised application (DApp) that lets neighbours lend and borrow tools wi
 | Problem in a normal tool-sharing group | How the contract solves it |
 | --- | --- |
 | "Will I get my drill back?" | Borrower locks a deposit in the contract before receiving the tool. |
-| "Will I get my deposit back?" | Neither party holds the money — the contract refunds it by fixed rules. |
+| "Will I get my deposit back?" | Neither party holds the money. The contract refunds it by fixed rules. |
 | Late returns cause arguments | Late fee is computed from block timestamps, not opinions. |
 | Owner ghosts after return | Borrower can self-refund after a 3-day confirmation window. |
 | Borrower never returns | Owner can claim the deposit after a 7-day grace period. |

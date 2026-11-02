@@ -65,7 +65,7 @@ const memberOf = (addr) => state.members.get(addr?.toLowerCase());
 const nameOf = (addr) => memberOf(addr)?.name || short(addr);
 const isMe = (addr) => state.account && addr?.toLowerCase() === state.account.toLowerCase();
 const fmtDate = (ts) =>
-  ts ? new Date(Number(ts) * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "—";
+  ts ? new Date(Number(ts) * 1000).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }) : "-";
 
 function relTime(ts) {
   const diff = Number(ts) - state.now;
@@ -505,13 +505,13 @@ function loanCard(l, role) {
 
   let note = "";
   if (l.status === 0n) note = role === "lender" ? "Waiting for your decision. Funds are already in escrow." : "Waiting for the owner to approve.";
-  if (l.status === 1n) note = overdue ? `<b class="warn">Overdue</b> by ${relTime(l.dueAt).replace(" ago", "")} — late fees are accruing.` : `Due back ${relTime(l.dueAt)}.`;
+  if (l.status === 1n) note = overdue ? `<b class="warn">Overdue</b> by ${relTime(l.dueAt).replace(" ago", "")}. Late fees are accruing.` : `Due back ${relTime(l.dueAt)}.`;
   if (l.status === 2n)
     note =
       role === "lender"
-        ? `Borrower says it's back. Inspect it — you can confirm until ${fmtDate(Number(l.returnedAt) + CONFIRM_WINDOW)}.`
+        ? `Borrower says it's back. Inspect it. You can confirm until ${fmtDate(Number(l.returnedAt) + CONFIRM_WINDOW)}.`
         : `Waiting for the owner to confirm. If they don't by ${fmtDate(Number(l.returnedAt) + CONFIRM_WINDOW)}, you can reclaim the deposit yourself.`;
-  if (l.status === 3n) note = `Settled — late fee ${eth(l.lateFee)} ETH, damage ${eth(l.damageCharge)} ETH, refund ${eth(l.deposit - l.lateFee - l.damageCharge)} ETH.`;
+  if (l.status === 3n) note = `Settled. Late fee ${eth(l.lateFee)} ETH, damage ${eth(l.damageCharge)} ETH, refund ${eth(l.deposit - l.lateFee - l.damageCharge)} ETH.`;
   if (l.status === 6n) note = "Tool was not returned. Deposit transferred to the owner.";
 
   return `<article class="loan s-${status.toLowerCase()} ${overdue ? "overdue" : ""}">

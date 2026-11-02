@@ -91,11 +91,11 @@ Each transition checks the **caller's role** and the **current state**. Any inva
 
 | Event | Borrower | Owner |
 | --- | --- | --- |
-| Request | pays `fee + deposit` into the contract | — |
-| Cancel / Reject | refunded `fee + deposit` | — |
-| Approve | — | credited `fee` |
+| Request | pays `fee + deposit` into the contract | none |
+| Cancel / Reject | refunded `fee + deposit` | none |
+| Approve | none | credited `fee` |
 | Complete | credited `deposit − lateFee − damage` | credited `lateFee + damage` |
-| Default | — | credited `deposit` |
+| Default | none | credited `deposit` |
 
 **Late-fee formula:** `lateDays = ceil((returnedAt − dueAt) / 1 day)`. The fee per day is `2 × dailyFee`, or `deposit / 10` for free tools. The total is capped at the deposit.
 
