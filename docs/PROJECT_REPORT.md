@@ -64,7 +64,19 @@ The system has three layers:
 | `Tool` | id, owner, name, category, description, dailyFee, deposit, listed, currentLoanId, timesLent |
 | `Loan` | id, toolId, borrower, lender, durationDays, dailyFee, rentalFee, deposit, requestedAt, startedAt, dueAt, returnedAt, lateFee, damageCharge, status, rated flags |
 
-### 4.4 Loan state machine
+### 4.4 Functions the contract is built from
+
+| Kind | Example | What it does |
+| --- | --- | --- |
+| Constructor | `constructor()` | Stores the deployer as `owner` and emits `ContractDeployed`. The owner cannot change loans. |
+| Payable | `requestLoan` | Receives the rental fee and deposit in ETH. |
+| Pure | `quote` | Computes fee × days + deposit from its arguments only. It reads no storage. |
+| View | `getLoan`, `previewLateFee` | Read stored data and change nothing. |
+| Event | `LoanRequested`, `ContractDeployed` | Written into the transaction log and shown in the Ledger tab. |
+
+`require` stops a call when an input breaks a rule, for example `require(msg.value == required, "Payment must equal fee plus deposit")`. The failed transaction is discarded and the ETH is returned.
+
+### 4.5 Loan state machine
 
 ```
 Requested ──approve──▶ Active ──markReturned──▶ Returned ──confirmReturn / finalizeReturn──▶ Completed
@@ -75,7 +87,7 @@ Requested ──approve──▶ Active ──markReturned──▶ Returned ─
 
 Each transition checks the **caller's role** and the **current state**. Any invalid transition reverts with a custom error, for example `InvalidLoanStatus(current)`.
 
-### 4.5 Money flow
+### 4.6 Money flow
 
 | Event | Borrower | Owner |
 | --- | --- | --- |
@@ -90,7 +102,7 @@ Each transition checks the **caller's role** and the **current state**. Any inva
 ## 5. Implementation
 
 ### 5.1 Tools and technologies
-- **Solidity 0.8.24:** built-in overflow checks and custom errors.
+- **Solidity 0.8.24:** built-in overflow checks. Input rules use `require`. Loan-state failures use custom errors such as `InvalidLoanStatus`.
 - **OpenZeppelin Contracts 5:** `ReentrancyGuard`.
 - **Hardhat 2:** compilation, local blockchain, testing and deployment scripts.
 - **Mocha / Chai / hardhat-network-helpers:** unit tests, including time travel.

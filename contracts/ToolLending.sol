@@ -107,8 +107,13 @@ contract ToolLending is ReentrancyGuard {
 
     mapping(address => uint256) public pendingWithdrawals;
 
+    /// @notice Account that deployed the contract. It has no special powers over loans.
+    address public owner;
+    uint256 public deployedAt;
+
     // ───────────────────────────── Events ─────────────────────────────
 
+    event ContractDeployed(address indexed owner, uint256 deployedAt);
     event MemberRegistered(address indexed member, string name, string neighbourhood);
     event ProfileUpdated(address indexed member, string name, string neighbourhood);
     event ToolListed(uint256 indexed toolId, address indexed owner, string name, uint256 dailyFee, uint256 deposit);
@@ -125,27 +130,15 @@ contract ToolLending is ReentrancyGuard {
 
     // ───────────────────────────── Errors ─────────────────────────────
 
-    error NotRegistered();
-    error AlreadyRegistered();
-    error EmptyField();
     error ToolNotFound();
     error LoanNotFound();
-    error NotToolOwner();
     error NotBorrower();
     error NotLender();
     error NotParticipant();
-    error ToolNotListed();
-    error ToolUnavailable();
-    error ToolOnLoan();
-    error CannotBorrowOwnTool();
-    error InvalidDuration();
-    error InvalidDeposit();
-    error IncorrectPayment(uint256 expected, uint256 received);
     error InvalidLoanStatus(LoanStatus current);
     error ConfirmationWindowOpen(uint64 availableAt);
     error GracePeriodActive(uint64 availableAt);
     error ChargesExceedDeposit(uint256 maxDamageCharge);
-    error InvalidScore();
     error AlreadyRated();
     error NothingToWithdraw();
     error TransferFailed();
@@ -153,15 +146,34 @@ contract ToolLending is ReentrancyGuard {
     // ───────────────────────────── Modifiers ─────────────────────────────
 
     modifier onlyMember() {
-        if (!_members[msg.sender].registered) revert NotRegistered();
+        require(_members[msg.sender].registered, "Register as a member first");
         _;
+    }
+
+    constructor() {
+        require(msg.sender != address(0), "Owner address required");
+        owner = msg.sender;
+        deployedAt = block.timestamp;
+        emit ContractDeployed(msg.sender, deployedAt);
+    }
+
+    /// @notice Fee and total escrow for a loan. Pure: it reads no contract storage.
+    function quote(uint256 dailyFee, uint32 durationDays, uint256 deposit)
+        public
+        pure
+        returns (uint256 rentalFee, uint256 totalDue)
+    {
+        require(durationDays > 0 && durationDays <= MAX_LOAN_DAYS, "Duration must be 1 to 30 days");
+        require(deposit > 0, "Deposit required");
+        rentalFee = dailyFee * durationDays;
+        totalDue = rentalFee + deposit;
     }
 
     // ───────────────────────────── Membership ─────────────────────────────
 
     function registerMember(string calldata name, string calldata neighbourhood) external {
-        if (_members[msg.sender].registered) revert AlreadyRegistered();
-        if (bytes(name).length == 0 || bytes(neighbourhood).length == 0) revert EmptyField();
+        require(!_members[msg.sender].registered, "Already registered");
+        require(bytes(name).length > 0 && bytes(neighbourhood).length > 0, "Name and neighbourhood required");
 
         Member storage m = _members[msg.sender];
         m.name = name;
@@ -174,7 +186,7 @@ contract ToolLending is ReentrancyGuard {
     }
 
     function updateProfile(string calldata name, string calldata neighbourhood) external onlyMember {
-        if (bytes(name).length == 0 || bytes(neighbourhood).length == 0) revert EmptyField();
+        require(bytes(name).length > 0 && bytes(neighbourhood).length > 0, "Name and neighbourhood required");
         Member storage m = _members[msg.sender];
         m.name = name;
         m.neighbourhood = neighbourhood;
@@ -190,8 +202,8 @@ contract ToolLending is ReentrancyGuard {
         uint256 dailyFee,
         uint256 deposit
     ) external onlyMember returns (uint256 toolId) {
-        if (bytes(name).length == 0 || bytes(category).length == 0) revert EmptyField();
-        if (deposit == 0) revert InvalidDeposit();
+        require(bytes(name).length > 0 && bytes(category).length > 0, "Name and category required");
+        require(deposit > 0, "Deposit required");
 
         toolId = ++toolCount;
         Tool storage t = _tools[toolId];
@@ -211,9 +223,9 @@ contract ToolLending is ReentrancyGuard {
     /// @notice Change pricing or (un)list a tool. Not allowed while a loan is in progress.
     function updateTool(uint256 toolId, uint256 dailyFee, uint256 deposit, bool listed) external {
         Tool storage t = _getTool(toolId);
-        if (t.owner != msg.sender) revert NotToolOwner();
-        if (t.currentLoanId != 0) revert ToolOnLoan();
-        if (deposit == 0) revert InvalidDeposit();
+        require(t.owner == msg.sender, "Only the tool owner can update it");
+        require(t.currentLoanId == 0, "Cannot edit a tool while it is on loan");
+        require(deposit > 0, "Deposit required");
 
         t.dailyFee = dailyFee;
         t.deposit = deposit;
@@ -227,14 +239,12 @@ contract ToolLending is ReentrancyGuard {
     /// @notice Request a tool. `msg.value` must equal `dailyFee * durationDays + deposit`.
     function requestLoan(uint256 toolId, uint32 durationDays) external payable onlyMember returns (uint256 loanId) {
         Tool storage t = _getTool(toolId);
-        if (!t.listed) revert ToolNotListed();
-        if (t.currentLoanId != 0) revert ToolUnavailable();
-        if (t.owner == msg.sender) revert CannotBorrowOwnTool();
-        if (durationDays == 0 || durationDays > MAX_LOAN_DAYS) revert InvalidDuration();
+        require(t.listed, "Tool is not listed");
+        require(t.currentLoanId == 0, "Tool is already reserved");
+        require(t.owner != msg.sender, "Cannot borrow your own tool");
 
-        uint256 rentalFee = t.dailyFee * durationDays;
-        uint256 required = rentalFee + t.deposit;
-        if (msg.value != required) revert IncorrectPayment(required, msg.value);
+        (uint256 rentalFee, uint256 required) = quote(t.dailyFee, durationDays, t.deposit);
+        require(msg.value == required, "Payment must equal fee plus deposit");
 
         loanId = ++loanCount;
         Loan storage l = _loans[loanId];
@@ -351,7 +361,7 @@ contract ToolLending is ReentrancyGuard {
     function rate(uint256 loanId, uint8 score) external {
         Loan storage l = _getLoan(loanId);
         _requireStatus(l, LoanStatus.Completed);
-        if (score == 0 || score > 5) revert InvalidScore();
+        require(score >= 1 && score <= 5, "Score must be from 1 to 5");
 
         address ratee;
         if (msg.sender == l.borrower) {

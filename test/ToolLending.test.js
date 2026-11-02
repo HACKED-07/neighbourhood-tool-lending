@@ -41,6 +41,22 @@ describe("ToolLending", function () {
     return ctx;
   }
 
+  describe("Constructor and quote", function () {
+    it("stores the deployer and emits ContractDeployed", async function () {
+      const [deployer] = await ethers.getSigners();
+      const lending = await ethers.deployContract("ToolLending");
+      await expect(lending.deploymentTransaction()).to.emit(lending, "ContractDeployed").withArgs(deployer.address, await lending.deployedAt());
+      expect(await lending.owner()).to.equal(deployer.address);
+    });
+
+    it("quotes fee plus deposit with require, and reads no storage", async function () {
+      const { lending } = await loadFixture(deployFixture);
+      expect(await lending.quote.staticCall(DAILY_FEE, 3, DEPOSIT)).to.deep.equal([DAILY_FEE * 3n, DAILY_FEE * 3n + DEPOSIT]);
+      await expect(lending.quote.staticCall(DAILY_FEE, 0, DEPOSIT)).to.be.revertedWith("Duration must be 1 to 30 days");
+      await expect(lending.quote.staticCall(DAILY_FEE, 2, 0)).to.be.revertedWith("Deposit required");
+    });
+  });
+
   describe("Membership", function () {
     it("registers a member and emits an event", async function () {
       const { lending, unregistered } = await loadFixture(deployFixture);
@@ -56,8 +72,8 @@ describe("ToolLending", function () {
 
     it("rejects duplicate registration and empty fields", async function () {
       const { lending, owner, unregistered } = await loadFixture(deployFixture);
-      await expect(lending.connect(owner).registerMember("A", "B")).to.be.revertedWithCustomError(lending, "AlreadyRegistered");
-      await expect(lending.connect(unregistered).registerMember("", "B")).to.be.revertedWithCustomError(lending, "EmptyField");
+      await expect(lending.connect(owner).registerMember("A", "B")).to.be.revertedWith("Already registered");
+      await expect(lending.connect(unregistered).registerMember("", "B")).to.be.revertedWith("Name and neighbourhood required");
     });
 
     it("lets a member update their profile", async function () {
@@ -74,15 +90,12 @@ describe("ToolLending", function () {
       const { lending, unregistered } = await loadFixture(deployFixture);
       await expect(
         lending.connect(unregistered).listTool("Saw", "Power Tools", "", DAILY_FEE, DEPOSIT)
-      ).to.be.revertedWithCustomError(lending, "NotRegistered");
+      ).to.be.revertedWith("Register as a member first");
     });
 
     it("requires a non-zero deposit", async function () {
       const { lending, owner } = await loadFixture(deployFixture);
-      await expect(lending.connect(owner).listTool("Saw", "Power Tools", "", DAILY_FEE, 0)).to.be.revertedWithCustomError(
-        lending,
-        "InvalidDeposit"
-      );
+      await expect(lending.connect(owner).listTool("Saw", "Power Tools", "", DAILY_FEE, 0)).to.be.revertedWith("Deposit required");
     });
 
     it("stores the tool and indexes it by owner", async function () {
@@ -97,8 +110,8 @@ describe("ToolLending", function () {
 
     it("lets only the owner update a tool, and not while on loan", async function () {
       const { lending, owner, borrower } = await loadFixture(requestedFixture);
-      await expect(lending.connect(borrower).updateTool(1, 0, DEPOSIT, true)).to.be.revertedWithCustomError(lending, "NotToolOwner");
-      await expect(lending.connect(owner).updateTool(1, 0, DEPOSIT, true)).to.be.revertedWithCustomError(lending, "ToolOnLoan");
+      await expect(lending.connect(borrower).updateTool(1, 0, DEPOSIT, true)).to.be.revertedWith("Only the tool owner can update it");
+      await expect(lending.connect(owner).updateTool(1, 0, DEPOSIT, true)).to.be.revertedWith("Cannot edit a tool while it is on loan");
     });
   });
 
@@ -122,24 +135,21 @@ describe("ToolLending", function () {
       const { lending, owner, borrower, stranger } = await loadFixture(deployFixture);
       const value = DAILY_FEE * 2n + DEPOSIT;
 
-      await expect(lending.connect(borrower).requestLoan(1, 2, { value: value - 1n }))
-        .to.be.revertedWithCustomError(lending, "IncorrectPayment")
-        .withArgs(value, value - 1n);
-      await expect(lending.connect(borrower).requestLoan(1, 0, { value: DEPOSIT })).to.be.revertedWithCustomError(lending, "InvalidDuration");
-      await expect(lending.connect(borrower).requestLoan(1, 31, { value })).to.be.revertedWithCustomError(lending, "InvalidDuration");
-      await expect(lending.connect(owner).requestLoan(1, 2, { value })).to.be.revertedWithCustomError(lending, "CannotBorrowOwnTool");
+      await expect(lending.connect(borrower).requestLoan(1, 2, { value: value - 1n })).to.be.revertedWith(
+        "Payment must equal fee plus deposit"
+      );
+      await expect(lending.connect(borrower).requestLoan(1, 0, { value: DEPOSIT })).to.be.revertedWith("Duration must be 1 to 30 days");
+      await expect(lending.connect(borrower).requestLoan(1, 31, { value })).to.be.revertedWith("Duration must be 1 to 30 days");
+      await expect(lending.connect(owner).requestLoan(1, 2, { value })).to.be.revertedWith("Cannot borrow your own tool");
 
       await lending.connect(borrower).requestLoan(1, 2, { value });
-      await expect(lending.connect(stranger).requestLoan(1, 2, { value })).to.be.revertedWithCustomError(lending, "ToolUnavailable");
+      await expect(lending.connect(stranger).requestLoan(1, 2, { value })).to.be.revertedWith("Tool is already reserved");
     });
 
     it("rejects requests for unlisted or unknown tools", async function () {
       const { lending, owner, borrower } = await loadFixture(deployFixture);
       await lending.connect(owner).updateTool(1, DAILY_FEE, DEPOSIT, false);
-      await expect(lending.connect(borrower).requestLoan(1, 1, { value: DAILY_FEE + DEPOSIT })).to.be.revertedWithCustomError(
-        lending,
-        "ToolNotListed"
-      );
+      await expect(lending.connect(borrower).requestLoan(1, 1, { value: DAILY_FEE + DEPOSIT })).to.be.revertedWith("Tool is not listed");
       await expect(lending.getTool(99)).to.be.revertedWithCustomError(lending, "ToolNotFound");
     });
   });
@@ -280,7 +290,7 @@ describe("ToolLending", function () {
 
       await expect(lending.connect(borrower).rate(1, 5)).to.be.revertedWithCustomError(lending, "AlreadyRated");
       await expect(lending.connect(stranger).rate(1, 5)).to.be.revertedWithCustomError(lending, "NotParticipant");
-      await expect(lending.connect(owner).rate(1, 6)).to.be.revertedWithCustomError(lending, "InvalidScore");
+      await expect(lending.connect(owner).rate(1, 6)).to.be.revertedWith("Score must be from 1 to 5");
 
       expect(await lending.reputationOf(owner.address)).to.equal(500);
       expect(await lending.reputationOf(borrower.address)).to.equal(400);

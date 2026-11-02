@@ -139,7 +139,7 @@ The contract also has view functions: `getAllTools`, `getTool`, `getToolsByOwner
 ## Security considerations
 
 - **Checks-effects-interactions and pull payments:** ETH leaves the contract only in `withdraw()`, which is protected by OpenZeppelin's `ReentrancyGuard`.
-- **Exact payment:** `requestLoan` reverts unless `msg.value` exactly equals the required amount.
+- **Exact payment:** `requestLoan` uses `require` so `msg.value` must equal the amount returned by the `pure` function `quote`.
 - **Bounded charges:** the late fee plus the damage charge can never exceed the deposit.
 - **Role checks:** every state transition verifies the caller (borrower or lender) and the current loan status.
 - **Custom errors:** these give cheaper reverts with clear reasons, and the frontend decodes them into readable messages.

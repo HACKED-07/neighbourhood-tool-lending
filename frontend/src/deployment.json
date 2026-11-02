@@ -1,22 +1,17 @@
 {
   "network": "localhost",
   "chainId": 31337,
-  "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-  "deployBlock": 1,
+  "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+  "deployBlock": 43,
   "abi": [
     {
       "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
       "name": "AlreadyRated",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "AlreadyRegistered",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "CannotBorrowOwnTool",
       "type": "error"
     },
     {
@@ -42,11 +37,6 @@
       "type": "error"
     },
     {
-      "inputs": [],
-      "name": "EmptyField",
-      "type": "error"
-    },
-    {
       "inputs": [
         {
           "internalType": "uint64",
@@ -60,43 +50,12 @@
     {
       "inputs": [
         {
-          "internalType": "uint256",
-          "name": "expected",
-          "type": "uint256"
-        },
-        {
-          "internalType": "uint256",
-          "name": "received",
-          "type": "uint256"
-        }
-      ],
-      "name": "IncorrectPayment",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "InvalidDeposit",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "InvalidDuration",
-      "type": "error"
-    },
-    {
-      "inputs": [
-        {
           "internalType": "enum ToolLending.LoanStatus",
           "name": "current",
           "type": "uint8"
         }
       ],
       "name": "InvalidLoanStatus",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "InvalidScore",
       "type": "error"
     },
     {
@@ -121,16 +80,6 @@
     },
     {
       "inputs": [],
-      "name": "NotRegistered",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "NotToolOwner",
-      "type": "error"
-    },
-    {
-      "inputs": [],
       "name": "NothingToWithdraw",
       "type": "error"
     },
@@ -146,23 +95,27 @@
     },
     {
       "inputs": [],
-      "name": "ToolNotListed",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "ToolOnLoan",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "ToolUnavailable",
-      "type": "error"
-    },
-    {
-      "inputs": [],
       "name": "TransferFailed",
       "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "deployedAt",
+          "type": "uint256"
+        }
+      ],
+      "name": "ContractDeployed",
+      "type": "event"
     },
     {
       "anonymous": false,
@@ -603,6 +556,19 @@
       "name": "confirmReturn",
       "outputs": [],
       "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "deployedAt",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
       "type": "function"
     },
     {
@@ -1325,6 +1291,19 @@
       "type": "function"
     },
     {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
       "inputs": [
         {
           "internalType": "address",
@@ -1365,6 +1344,40 @@
         }
       ],
       "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "dailyFee",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint32",
+          "name": "durationDays",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "deposit",
+          "type": "uint256"
+        }
+      ],
+      "name": "quote",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "rentalFee",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalDue",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "pure",
       "type": "function"
     },
     {
