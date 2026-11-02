@@ -174,19 +174,37 @@ async function useDemoAccount(index) {
   await refresh();
 }
 
+function rpcErrorCode(err) {
+  return err?.error?.code ?? err?.info?.error?.code ?? err?.code;
+}
+
+/** MetaMask only knows mainnet and popular chains until we add the local one. */
+async function ensureLocalChain(provider) {
+  const target = ethers.toQuantity(deployment.chainId);
+  const { chainId } = await provider.getNetwork();
+  if (Number(chainId) === deployment.chainId) return;
+
+  try {
+    await provider.send("wallet_switchEthereumChain", [{ chainId: target }]);
+  } catch (err) {
+    if (rpcErrorCode(err) === 4001) throw err;
+    await provider.send("wallet_addEthereumChain", [
+      {
+        chainId: target,
+        chainName: "Hardhat Local",
+        nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+        rpcUrls: [LOCAL_RPC],
+      },
+    ]);
+  }
+}
+
 async function connectMetaMask() {
   if (!window.ethereum) return toast("MetaMask not detected. Install it or use a demo account.", "error");
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
     await provider.send("eth_requestAccounts", []);
-    const { chainId } = await provider.getNetwork();
-    if (Number(chainId) !== deployment.chainId) {
-      try {
-        await provider.send("wallet_switchEthereumChain", [{ chainId: ethers.toQuantity(deployment.chainId) }]);
-      } catch {
-        return toast(`Switch MetaMask to chain ${deployment.chainId} (${deployment.network}).`, "error");
-      }
-    }
+    await ensureLocalChain(provider);
     const fresh = new ethers.BrowserProvider(window.ethereum);
     state.signer = await fresh.getSigner();
     state.account = await state.signer.getAddress();
